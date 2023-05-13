@@ -19,6 +19,7 @@ from peft import (
     get_peft_model_state_dict,
     prepare_model_for_int8_training,
     set_peft_model_state_dict,
+    PeftModel
 )
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
@@ -92,6 +93,7 @@ def train(
 
     device_map = "auto"
     world_size = int(os.environ.get("WORLD_SIZE", 1))
+    print("World size ", world_size)
     ddp = world_size != 1
     if ddp:
         device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)}
@@ -181,7 +183,16 @@ def train(
         bias="none",
         task_type="CAUSAL_LM",
     )
+    # LORA_WEIGHTS = "tloen/alpaca-lora-7b"
+    LORA_WEIGHTS ="HiTZ/alpaca-lora-7b-en-pt-es-ca-eu-gl-at"
+    model = PeftModel.from_pretrained(
+        model,
+        LORA_WEIGHTS,
+        torch_dtype=torch.float16,
+    )
+
     model = get_peft_model(model, config)
+
 
     if data_path.endswith(".json") or data_path.endswith(".jsonl"):
         data = load_dataset("json", data_files=data_path)
